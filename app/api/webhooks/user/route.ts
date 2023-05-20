@@ -1,8 +1,7 @@
 import { Webhook, WebhookRequiredHeaders } from "svix";
 import { headers } from "next/headers";
-import { NextApiResponse } from "next";
 import { IncomingHttpHeaders } from "http";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 const WebhookSecret = process.env.WEBHOOK_SECRET || ""
@@ -10,13 +9,13 @@ const WebhookSecret = process.env.WEBHOOK_SECRET || ""
 type EventType = "user.created" | "user.updated" | "user.deleted"
 
 type Event = {
-    data: Record<string, string>
+    data: Record<string, string | number>
     object: "event"
     type: EventType
 }
 
-export default async function handler(
-    request: Request
+async function handler(
+    request: NextRequest,
 ) {
     const payload = await request.json()
     const headersList = headers()
@@ -32,7 +31,7 @@ export default async function handler(
     try {
         evt = wh.verify(JSON.stringify(payload), heads as IncomingHttpHeaders & WebhookRequiredHeaders) as Event
     } catch (e) {
-        console.log(e)
+        console.error((e as Error).message)
         return NextResponse.json({}, {status: 400})
     }
 
@@ -40,23 +39,26 @@ export default async function handler(
     const eventType: EventType = evt.type
 
     if (eventType === "user.created" || eventType === "user.updated") {
-        const {id, email, firstName, lastName} = evt.data
+        const {id, first_name, last_name} = evt.data
 
         await prisma.user.upsert({
-            where: {id: id},
+            where: {id: id as string},
             create: {
-                id: id,
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
+                id: id as string,
+                firstName: first_name as string,
+                lastName: last_name as string,
             },
             update: {
-                email: email,
-                firstName: firstName,
-                lastName: lastName,
+                firstName: first_name as string,
+                lastName: last_name as string,
             }
         })
+        console.log(evt.data)
+    } else if (eventType === "user.deleted") {
+        console.log("User deleted")
     }
+
+    return NextResponse.json({})
 }   
 
 export const GET = handler
