@@ -12,22 +12,111 @@ datasource db {
 }
 
 model User {
-  id        String  @id @unique
-  firstName String
-  lastName  String
-  bio       String?
-  posts     Post[]
+  id                  String         @id @unique
+  firstName           String
+  lastName            String
+  username            String?
+  email               String         @unique
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  bio                 String?
+  avatarUrl           String?
+  currentLocation     String?
+  schoolName          String?
+  schoolYear          Int?
+  internationalStatus String?
+  occupation          String?
+  employer            String?
+  languages           UserLanguage[]
+  countryOrigin       UserCountry[]
+  website             Website[]
+  userInterests       UserInterest[]
+
+  posts    Post[]
+  comments Comment[]
+}
+
+model Language {
+  id    String         @id @default(cuid())
+  code  String         @unique
+  value String         @unique
+  users UserLanguage[]
+}
+
+model UserLanguage {
+  userId     String   @unique
+  languageId String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  language   Language @relation(fields: [languageId], references: [id])
+
+  @@index([userId, languageId])
+}
+
+model Country {
+  id    String        @id @default(cuid())
+  code  String        @unique
+  value String        @unique
+  user  UserCountry[]
+}
+
+model UserCountry {
+  userId    String  @unique
+  countryId String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  country   Country @relation(fields: [countryId], references: [id])
+
+  @@index([userId, countryId])
+}
+
+model Website {
+  id           String @id @default(cuid())
+  providerCode String
+  providerName String
+  url          String
+  userId       String
+  user         User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Interest {
+  id            String         @id @default(cuid())
+  label         String
+  userInterests UserInterest[]
+}
+
+model UserInterest {
+  userId     String   @unique
+  interestId String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  interest   Interest @relation(fields: [interestId], references: [id])
+
+  @@index([userId, interestId])
 }
 
 model Post {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  title     String    @db.VarChar(255)
+  content   String
+  published Boolean   @default(false)
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String
+  comments  Comment[]
+
+  @@index([authorId])
+}
+
+model Comment {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  title     String   @db.VarChar(255)
   content   String
-  published Boolean  @default(false)
+  authorId  String   @unique
   author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
+  postId    String   @unique
+  post      Post     @relation(fields: [postId], references: [id])
 
-  @@index([authorId])
+  @@index([authorId, postId])
 }

@@ -2,6 +2,7 @@ import { Webhook, WebhookRequiredHeaders } from "svix";
 import { headers } from "next/headers";
 import { IncomingHttpHeaders } from "http";
 import { NextRequest, NextResponse } from "next/server";
+import { UserJSON } from "@clerk/nextjs/dist/server";
 import prisma from "@/lib/prisma";
 
 const WebhookSecret = process.env.WEBHOOK_SECRET || ""
@@ -9,7 +10,7 @@ const WebhookSecret = process.env.WEBHOOK_SECRET || ""
 type EventType = "user.created" | "user.updated" | "user.deleted"
 
 type Event = {
-    data: Record<string, string | number>
+    data: UserJSON
     object: "event"
     type: EventType
 }
@@ -40,6 +41,7 @@ async function handler(
 
     if (eventType === "user.created" || eventType === "user.updated") {
         const {id, first_name, last_name} = evt.data
+        const email_address = evt.data.email_addresses[0].email_address
 
         await prisma.user.upsert({
             where: {id: id as string},
@@ -47,13 +49,14 @@ async function handler(
                 id: id as string,
                 firstName: first_name as string,
                 lastName: last_name as string,
+                email: email_address as string
+                
             },
             update: {
                 firstName: first_name as string,
                 lastName: last_name as string,
             }
         })
-        console.log(evt.data)
     } else if (eventType === "user.deleted") {
         console.log("User deleted")
     }
