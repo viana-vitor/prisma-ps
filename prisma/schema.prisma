@@ -28,44 +28,38 @@ model User {
   occupation          String?
   employer            String?
   languages           UserLanguage[]
-  countryOrigin       UserCountry[]
+  countryOrigin       String?
+  country             Country?       @relation(fields: [countryOrigin], references: [code])
   website             Website[]
   userInterests       UserInterest[]
 
   posts    Post[]
   comments Comment[]
+
+  @@index([countryOrigin])
 }
 
 model Language {
-  id    String         @id @default(cuid())
-  code  String         @unique
-  value String         @unique
+  code  String         @id @unique
+  name  String         @unique
   users UserLanguage[]
 }
 
 model UserLanguage {
-  userId     String   @unique
-  languageId String   @unique
-  user       User     @relation(fields: [userId], references: [id])
-  language   Language @relation(fields: [languageId], references: [id])
+  id           String   @id @default(cuid())
+  userId       String
+  languageCode String
+  user         User     @relation(fields: [userId], references: [id])
+  language     Language @relation(fields: [languageCode], references: [code])
 
-  @@index([userId, languageId])
+  @@index([languageCode])
+  @@index([userId])
 }
 
 model Country {
-  id    String        @id @default(cuid())
-  code  String        @unique
-  value String        @unique
-  user  UserCountry[]
-}
-
-model UserCountry {
-  userId    String  @unique
-  countryId String  @unique
-  user      User    @relation(fields: [userId], references: [id])
-  country   Country @relation(fields: [countryId], references: [id])
-
-  @@index([userId, countryId])
+  code  String @id @unique
+  name  String @unique
+  users User[]
 }
 
 model Website {
@@ -81,17 +75,19 @@ model Website {
 
 model Interest {
   id            String         @id @default(cuid())
-  label         String
+  name          String         @unique
   userInterests UserInterest[]
 }
 
 model UserInterest {
-  userId     String   @unique
-  interestId String   @unique
+  id         String   @id @default(cuid())
+  userId     String
+  interestId String
   user       User     @relation(fields: [userId], references: [id])
   interest   Interest @relation(fields: [interestId], references: [id])
 
-  @@index([userId, interestId])
+  @@index([userId])
+  @@index([interestId])
 }
 
 model Post {
@@ -99,7 +95,7 @@ model Post {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   title     String    @db.VarChar(255)
-  content   String
+  content   String    @db.Text
   published Boolean   @default(false)
   author    User      @relation(fields: [authorId], references: [id])
   authorId  String
@@ -112,7 +108,7 @@ model Comment {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  content   String
+  content   String   @db.Text
   authorId  String   @unique
   author    User     @relation(fields: [authorId], references: [id])
   postId    String   @unique

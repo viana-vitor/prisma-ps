@@ -15,7 +15,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        layout: {
+          logoImageUrl: "/next.svg",
+          logoPlacement: "inside",
+        },
+        variables: {
+          colorPrimary: "#4aaee7",
+          colorText: "#57534e",
+        },
+        elements: {
+          modalBackdrop: "bg-transparent backdrop-blur-sm",
+        },
+      }}
+    >
       <html lang='en'>
         <body className={inter.className}>{children}</body>
       </html>
